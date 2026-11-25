@@ -3,8 +3,9 @@
 
 Writes a single one-line joke (max 200 characters) about a meeting that
 should have been an email to /output/entry.txt, the deliverable the
-program/v1 harness scores. The joke is kept as one constant so the entry
-text is byte-identical on every run.
+program/v1 harness scores. The joke lives in one constant so the entry
+text is byte-identical on every run, and the program re-reads what it
+wrote to prove the file on disk matches that constant exactly.
 """
 
 import os
@@ -45,6 +46,12 @@ def main() -> int:
     out_path = resolve_output_path()
     with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(ENTRY)
+    # Round-trip guard: the file on disk must match the entry exactly,
+    # so a partial write or encoding slip can never ship silently.
+    with open(out_path, "r", encoding="utf-8") as fh:
+        written = fh.read()
+    if written != ENTRY:
+        raise ValueError(f"round-trip mismatch in {out_path}: wrote {len(written)} chars, expected {len(ENTRY)}")
     print(f"Wrote {len(ENTRY)}-char entry to {out_path}")
     return 0
 
